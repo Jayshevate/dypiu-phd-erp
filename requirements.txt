@@ -1,0 +1,2 @@
+Django>=5.2,<6.0
+# psycopg[binary]>=3.2  # uncomment for PostgreSQL (set POSTGRES_DB etc.)

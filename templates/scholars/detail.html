@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ scholar.prn }} · DYPIU PhD ERP{% endblock %}
+{% block content %}
+<h2>{{ scholar.name }} <span class="muted">{{ scholar.prn }}</span></h2>
+<p>{{ scholar.get_category_display }} · {{ scholar.department }} · Registered {{ scholar.registration_date|default:"—" }}
+ · Programme ceiling {{ scholar.programme_ceiling|default:"—" }} · Fellowship {{ scholar.get_fellowship_display }}</p>
+<p><strong>Phase {{ scholar.phase }}: {{ scholar.get_phase_display }}</strong> ({{ scholar.get_status_display }})</p>
+{% if gate.open %}<p class="met">All conditions to leave this phase are met.</p>
+{% else %}<p>Outstanding before the next phase:</p><ul>{% for r in gate.reasons %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
+
+<h3>Deadlines</h3>
+<table><tr><th>Deadline</th><th>Due</th><th>State</th></tr>
+{% for d, state in deadlines %}<tr><td>{{ d.title }}</td><td>{{ d.due_date }}</td><td class="{{ state }}">{{ state }}</td></tr>
+{% empty %}<tr><td colspan="3" class="muted">Run the deadline engine to compute deadlines.</td></tr>{% endfor %}
+</table>
+
+<h3>Approvals</h3>
+<table><tr><th>Request</th><th>Status</th><th>Waiting on</th></tr>
+{% for a in approvals %}<tr><td>{{ a.summary }}</td><td>{{ a.get_status_display }}</td><td>{{ a.pending_step.get_role_display|default:"—" }}</td></tr>
+{% empty %}<tr><td colspan="3" class="muted">None.</td></tr>{% endfor %}
+</table>
+
+<h3>History</h3>
+<table><tr><th>When</th><th>Phase</th><th>Status</th><th>Note</th></tr>
+{% for t in transitions %}<tr><td>{{ t.at|date:"Y-m-d" }}</td><td>{{ t.from_phase }} → {{ t.to_phase }}</td><td>{{ t.from_status }} → {{ t.to_status }}</td><td>{{ t.note }}</td></tr>
+{% empty %}<tr><td colspan="4" class="muted">No transitions yet.</td></tr>{% endfor %}
+</table>
+{% endblock %}

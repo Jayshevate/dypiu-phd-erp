@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Overdue deadlines</h2>
+<table><tr><th>Scholar</th><th>Deadline</th><th>Due</th></tr>
+{% for d in overdue %}<tr><td><a href="{% url 'scholars:detail' d.scholar.prn %}">{{ d.scholar.prn }}</a> {{ d.scholar.name }}</td><td>{{ d.title }}</td><td class="overdue">{{ d.due_date }}</td></tr>
+{% empty %}<tr><td colspan="3" class="muted">Nothing overdue.</td></tr>{% endfor %}
+</table>
+<h2>Upcoming deadlines</h2>
+<table><tr><th>Scholar</th><th>Deadline</th><th>Due</th></tr>
+{% for d in upcoming %}<tr><td><a href="{% url 'scholars:detail' d.scholar.prn %}">{{ d.scholar.prn }}</a> {{ d.scholar.name }}</td><td>{{ d.title }}</td><td>{{ d.due_date }}</td></tr>
+{% empty %}<tr><td colspan="3" class="muted">No upcoming deadlines.</td></tr>{% endfor %}
+</table>
+<h2>Scholars ({{ scholars|length }})</h2>
+<table><tr><th>PRN</th><th>Name</th><th>Category</th><th>Phase</th><th>Status</th></tr>
+{% for s in scholars %}<tr><td><a href="{% url 'scholars:detail' s.prn %}">{{ s.prn }}</a></td><td>{{ s.name }}</td><td>{{ s.get_category_display }}</td><td>{{ s.get_phase_display }}</td><td>{{ s.get_status_display }}</td></tr>
+{% empty %}<tr><td colspan="5" class="muted">No scholars visible to you.</td></tr>{% endfor %}
+</table>
+{% endblock %}
