@@ -1,10 +1,12 @@
 from datetime import date, timedelta
+from io import StringIO
 from itertools import count
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db import IntegrityError, connection, transaction
 from django.test import TestCase
 from django.utils import timezone
@@ -425,3 +427,131 @@ class AdministrativePermissionTests(IdentityFixture):
         self.assertEqual([c["capability"] for c in body["capabilities"]], ["ACADEMIC_ADMIN"])
         self.assertEqual([w["key"] for w in body["workspaces"]], ["academic_admin"])
         self.assertEqual(len(effective_capabilities(acad)), 1)
+
+
+GRANT_ACTION = "identity.capability.grant"
+
+
+class ProvisionIdentityCommandTests(IdentityFixture):
+    """manage.py provision_identity: a new login + Person + one institution-scoped
+    grant, only through an active SYSTEM_ADMIN and the identity services."""
+
+    PW = "a-long-dev-password"
+
+    def run_cmd(self, *, actor="sys@dypiu.ac.in", username="acad.test", email="acad.test@dypiu.ac.in",
+                capability="ACADEMIC_ADMIN", basis="Local dev provisioning", password=PW):
+        from unittest import mock
+        with mock.patch("identity.management.commands.provision_identity.getpass.getpass", return_value=password):
+            call_command("provision_identity", actor_email=actor, username=username, email=email,
+                         name="Academic Test", capability=capability, basis=basis, stdout=StringIO())
+
+    def assert_nothing_created(self, users_before, persons_before, grants_before):
+        self.assertEqual(get_user_model().objects.count(), users_before)
+        self.assertEqual(Person.objects.count(), persons_before)
+        self.assertEqual(CapabilityAssignment.objects.count(), grants_before)
+
+    def counts(self):
+        return get_user_model().objects.count(), Person.objects.count(), CapabilityAssignment.objects.count()
+
+    def test_provisions_normal_login_person_and_academic_admin(self):
+        self.run_cmd()
+        user = get_user_model().objects.get(username="acad.test")
+        self.assertFalse(user.is_staff or user.is_superuser)
+        self.assertTrue(user.check_password(self.PW))
+        person = Person.objects.get(email="acad.test@dypiu.ac.in")
+        self.assertEqual((person.user_id, person.is_active), (user.pk, True))
+        g = CapabilityAssignment.objects.get(person=person)
+        self.assertEqual((g.capability, g.scope_type, g.granted_by_id, g.basis),
+                         (C.ACADEMIC_ADMIN, S.INSTITUTION, self.sysadmin.pk, "Local dev provisioning"))
+        self.assertIn("academic_admin", [w["key"] for w in workspaces_of(person)])
+        # The login works through the real API sign-in.
+        r = self.client.post("/api/auth/login/", {"username": "acad.test", "password": self.PW},
+                             content_type="application/json")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("academic_admin", [w["key"] for w in r.json()["workspaces"]])
+
+    def test_every_step_is_audited_with_the_sysadmin_as_actor(self):
+        last = AuditEvent.objects.latest("id").id
+        self.run_cmd()
+        events = AuditEvent.objects.filter(id__gt=last)
+        actions = [e.action for e in events if e.allowed]
+        for action in ("identity.person.manage", "identity.person.create", "identity.person.link_user", GRANT_ACTION):
+            self.assertIn(action, actions)
+        grant_ev = events.get(action=GRANT_ACTION, allowed=True)
+        self.assertEqual((grant_ev.actor_id, grant_ev.capability_used), (self.sysadmin.pk, C.SYSTEM_ADMIN))
+        self.assertTrue(audit.verify_chain()[0])
+
+    def test_actor_without_system_admin_is_refused_and_audited(self):
+        acad = self.person(); self.grant(acad, C.ACADEMIC_ADMIN)
+        n = self.counts()
+        with self.assertRaises(CommandError):
+            self.run_cmd(actor=acad.email)
+        self.assert_nothing_created(*n)
+        ev = AuditEvent.objects.latest("id")
+        self.assertEqual((ev.action, ev.allowed, ev.actor_id), (GRANT_ACTION, False, acad.pk))
+
+    def test_unknown_or_inactive_actor_is_refused(self):
+        n = self.counts()
+        with self.assertRaises(CommandError):
+            self.run_cmd(actor="nobody@dypiu.ac.in")
+        other = self.person(); self.grant(other, C.SYSTEM_ADMIN)
+        other.is_active = False; other.save()
+        with self.assertRaises(CommandError):
+            self.run_cmd(actor=other.email)
+        self.assertEqual(self.counts()[2], n[2] + 1)  # only the fixture grant above
+
+    def test_revoked_system_admin_is_refused(self):
+        other = self.person(); g = self.grant(other, C.SYSTEM_ADMIN)
+        g.revoked_at = timezone.now(); g.save()
+        n = self.counts()
+        with self.assertRaises(CommandError):
+            self.run_cmd(actor=other.email)
+        self.assert_nothing_created(*n)
+
+    def test_self_grant_is_refused(self):
+        n = self.counts()
+        with self.assertRaises(CommandError):
+            self.run_cmd(email="sys@dypiu.ac.in")
+        self.assert_nothing_created(*n)
+        ev = AuditEvent.objects.latest("id")
+        self.assertEqual((ev.action, ev.allowed), (GRANT_ACTION, False))
+        self.assertIn("separation of duties", ev.reasons[0])
+
+    def test_invalid_capabilities_are_refused(self):
+        n = self.counts()
+        for cap in ("NOT_A_CAPABILITY", "SCHOLAR", "FACULTY", "SDRC_MEMBER", "SYSTEM_ADMIN", "DEPARTMENT_ADMIN",
+                    "EXAM_EVALUATOR"):
+            with self.subTest(cap=cap), self.assertRaises(CommandError):
+                self.run_cmd(capability=cap)
+        self.assert_nothing_created(*n)
+
+    def test_basis_is_required(self):
+        n = self.counts()
+        with self.assertRaises(CommandError):
+            self.run_cmd(basis="   ")
+        self.assert_nothing_created(*n)
+
+    def test_duplicate_login_person_or_active_grant_is_refused(self):
+        self.run_cmd()
+        n = self.counts()
+        with self.assertRaises(CommandError):  # same login
+            self.run_cmd(email="other@dypiu.ac.in")
+        with self.assertRaises(CommandError):  # same person email
+            self.run_cmd(username="another")
+        self.assert_nothing_created(*n)
+        # The database still refuses a second active grant of the same capability.
+        person = Person.objects.get(email="acad.test@dypiu.ac.in")
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            CapabilityAssignment.objects.create(person=person, capability=C.ACADEMIC_ADMIN,
+                                                scope_type=S.INSTITUTION, valid_from=TODAY, basis="dup")
+
+    def test_weak_or_mismatched_password_creates_nothing(self):
+        n = self.counts()
+        with self.assertRaises(CommandError):
+            self.run_cmd(password="short")
+        from unittest import mock
+        with mock.patch("identity.management.commands.provision_identity.getpass.getpass",
+                        side_effect=[self.PW, self.PW + "x"]), self.assertRaises(CommandError):
+            call_command("provision_identity", actor_email="sys@dypiu.ac.in", username="u", email="u@dypiu.ac.in",
+                         name="U", capability="ACADEMIC_ADMIN", basis="b", verbosity=0)
+        self.assert_nothing_created(*n)

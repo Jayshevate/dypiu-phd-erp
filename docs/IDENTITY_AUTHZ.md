@@ -51,6 +51,10 @@ Other functions:
   - you can't deactivate yourself.
 - Checks and denial records run **before** the write transaction, so denials are never rolled back. Every audit event is also written to the `identity.security` logger.
 - `python manage.py bootstrap_system_admin --email … --name … --basis …` creates the first SYSTEM_ADMIN. It is refused once one exists. This replaces the old client-side "seed admin email".
+- `python manage.py provision_identity --actor-email … --username … --email … --name … --capability … --basis …`
+  provisions one new identity: a normal login (password prompted), a Person, and one institution-scoped capability
+  grant. The actor must be an active SYSTEM_ADMIN, and each step goes through the services above (authorised and
+  audited). Derived capabilities, SYSTEM_ADMIN, self-grants and existing logins or persons are refused.
 - The Django admin shows identity models **read-only**, even to superusers.
 
 ## Authentication foundation
