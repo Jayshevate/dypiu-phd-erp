@@ -16,7 +16,20 @@ class Designation(models.TextChoices):
     OTHER = "OTHER", "Other / External"
 
 
+class University(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=200)
+
+    class Meta:
+        verbose_name_plural = "universities"
+
+    def __str__(self):
+        return self.name
+
+
 class School(models.Model):
+    university = models.ForeignKey(University, null=True, blank=True, on_delete=models.PROTECT,
+                                   related_name="schools")
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200)
 

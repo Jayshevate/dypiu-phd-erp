@@ -36,16 +36,10 @@ TAC_REQUIRE_INTERDISCIPLINARY = True          # member dept != scholar dept
 TAC_MEMBER_UNIQUE_PER_SUPERVISOR = True
 
 # --- Coursework ------------------------------------------------------------
+# Coursework rules (pass, GPA, C+, credits, attempts, completion) are academic
+# regulatory parameters: see coursework.AcademicRuleParameter. Only the
+# scheduling clock for the coursework-completion reminder remains here (RD-06).
 COURSEWORK_MONTHS = 12
-COURSE_MIN_GRADE_POINT = 6                    # C+
-COURSEWORK_MIN_GPA = Decimal("6.0")
-COURSEWORK_MAX_ATTEMPTS = 2                   # a 3rd needs VC override
-COURSEWORK_ATTEMPT_WINDOW_YEARS = 2
-REQUIRED_CREDITS = {                          # by entry qualification
-    "BTECH": 23,
-    "MTECH": 17,   # M.Tech / M.E. / M.Pharm
-    "PG": 20,      # Integrated / M.Sc / MCA / MBA / M.Com
-}
 
 # --- Research proposal -----------------------------------------------------
 PROPOSAL_DUE_MONTHS_AFTER_COURSEWORK = 6

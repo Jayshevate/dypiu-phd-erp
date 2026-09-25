@@ -2,56 +2,8 @@ from datetime import date
 from decimal import Decimal
 from unittest import TestCase
 
-from phd_rules import calendar_rules, durations, grading
+from phd_rules import calendar_rules, durations
 from phd_rules.dates import add_months, months_between
-
-
-class GradingTests(TestCase):
-    def test_band_edges(self):
-        cases = {100: ("A+", 10), 91: ("A+", 10), 90: ("A", 9), 81: ("A", 9), 80: ("B+", 8), 61: ("B", 7),
-                 60: ("C+", 6), 51: ("C+", 6), 50: ("C", 5), 41: ("C", 5), 40: ("D", 4), 39: ("F", 0), 0: ("F", 0)}
-        for marks, expected in cases.items():
-            self.assertEqual(grading.grade_for_marks(marks), expected, marks)
-
-    def test_rounds_half_up(self):
-        self.assertEqual(grading.grade_for_marks("90.5"), ("A+", 10))
-        self.assertEqual(grading.grade_for_marks("39.4"), ("F", 0))
-        self.assertEqual(grading.grade_for_marks("39.5"), ("D", 4))
-
-    def test_out_of_range(self):
-        with self.assertRaises(ValueError):
-            grading.grade_for_marks(101)
-
-    def test_c_is_not_a_pass(self):
-        self.assertFalse(grading.is_pass(5))
-        self.assertTrue(grading.is_pass(6))
-        self.assertFalse(grading.is_pass(None))
-
-    def _core(self, gp=8):
-        R = grading.CourseResult
-        return [R("SIS7001", 4, gp, True), R("SIS7002", 2, gp), R("SIS7003", 3, gp),
-                R("SIS7005", 2, gp), R("SIS7006", 1, gp), R("SIS7007", 2, gp)]
-
-    def test_credit_requirements_by_entry(self):
-        core = self._core()
-        mtech = core + [grading.CourseResult("E1", 3, 8)]
-        self.assertTrue(grading.evaluate_coursework(mtech, "MTECH").complete)
-        self.assertFalse(grading.evaluate_coursework(mtech, "PG").complete)
-        btech = mtech + [grading.CourseResult("E2", 3, 8), grading.CourseResult("E3", 3, 8)]
-        verdict = grading.evaluate_coursework(btech, "BTECH")
-        self.assertTrue(verdict.complete, verdict.reasons)
-        self.assertEqual(verdict.earned_credits, 23)
-
-    def test_ethics_submodule_must_clear(self):
-        results = self._core()
-        results[0] = grading.CourseResult("SIS7001", 4, 9, ethics_cleared=False)
-        v = grading.evaluate_coursework(results + [grading.CourseResult("E1", 3, 8)], "MTECH")
-        self.assertIn("SIS7001: ethics sub-module not cleared", v.reasons)
-
-    def test_gpa_floor(self):
-        v = grading.evaluate_coursework(self._core(gp=6) + [grading.CourseResult("E1", 3, 6)], "MTECH")
-        self.assertTrue(v.complete)
-        self.assertEqual(v.gpa, Decimal("6.00"))
 
 
 class DateTests(TestCase):

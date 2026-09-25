@@ -69,7 +69,7 @@ class CapabilityAssignment(models.Model):
             ),
             models.CheckConstraint(
                 name="capability_not_derived",
-                condition=~Q(capability__in=[c.value for c in DERIVED_CAPABILITIES]),
+                condition=~Q(capability__in=sorted(c.value for c in DERIVED_CAPABILITIES)),
             ),
             models.CheckConstraint(name="capability_valid_range",
                                    condition=Q(valid_to__isnull=True) | Q(valid_to__gte=models.F("valid_from"))),

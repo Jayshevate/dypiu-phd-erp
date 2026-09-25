@@ -5,9 +5,7 @@ from django.test import TestCase
 
 from core import testing as t
 from core.models import Committee
-from coursework.models import Course
-from coursework.tests import pass_core
-from coursework.services import record_result, register_attempt
+from coursework.academic.testing import complete_coursework
 from lifecycle import engine, services
 from lifecycle.models import DCReview, ProgressReport, ResearchProposal, Synopsis, Thesis, Viva
 from scholars.models import Phase, Status
@@ -45,10 +43,9 @@ class LifecycleTests(TestCase):
         t.approve_all(propose_supervisor(s, t.faculty(dept=self.dept)).approval)
         t.approve_all(propose_tac(s, [t.faculty(dept=self.other), t.faculty(dept=self.other)]))
 
-        pass_core(s)
-        elective = Course.objects.create(code="SIS7008-X", title="Elective", credits=3, category="ELECTIVE",
-                                         required_for_all=False)
-        record_result(register_attempt(s, elective, date(2027, 5, 5)), marks=88)
+        self.assertIn("SIS7001 not passed", engine.evaluate_gate(s).reasons)
+        s = complete_coursework(s)        # authoritative Academic services only
+        self.assertIsNotNone(s.coursework_completed_on)
         s = engine.advance_all(s)
         self.assertEqual(s.phase, Phase.RESEARCH_PROPOSAL)  # coursework + supervisor/TAC gates both passed
 

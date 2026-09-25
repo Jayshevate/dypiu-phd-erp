@@ -56,6 +56,10 @@ Other functions:
 ## Authentication foundation
 
 - `identity.middleware.PersonMiddleware` sets `request.person`.
-- `GET /identity/me/` returns the server-computed person, capabilities and workspaces: 401 if anonymous, 403 if no active person is linked.
+- `GET /identity/me/` returns the server-computed person, capabilities, workspaces and scope (department, school,
+  committees, supervised scholars, active teaching assignments): 401 if anonymous, 403 if no active person is linked.
+- REST (Step 5C): `POST /api/auth/login/` / `logout/` and `GET /api/auth/csrf/` (Django session + CSRF). Every
+  `/api/...` view requires an active Person (`identity.api_base.HasActivePerson`); errors use one JSON shape
+  (`identity.api_base.exception_handler`), and CSRF failures return JSON. See `docs/ACADEMIC_API.md`.
 - Settings: `SECRET_KEY` is required when `DEBUG` is off; HttpOnly, SameSite=Lax session cookies; secure cookies, SSL redirect and HSTS in production.
 - The identity provider (OIDC/SAML) is not yet connected (decision D-IdP).

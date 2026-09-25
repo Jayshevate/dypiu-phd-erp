@@ -8,7 +8,7 @@ DEFAULT_CHAINS = {
     "SUPERVISOR_ALLOCATION": ("Supervisor / co-supervisor allocation", [R.SDRC, R.DC]),
     "TAC_FORMATION": ("Thesis Advisory Committee formation", [R.DC]),
     "SUPERVISOR_CHANGE": ("Change / discontinuation of supervisor", [R.DC, R.DEAN_RD]),
-    "COURSEWORK_THIRD_ATTEMPT": ("Third coursework attempt (override)", [R.DC, R.VC]),
+    # Third coursework attempt: see coursework.ThirdAttemptCase (Dean R&D → VC).
     "PROPOSAL_EVALUATION": ("Research proposal recommendation", [R.DC]),
     "SYNOPSIS_EXTENSION": ("1-year pre-submission synopsis extension", [R.DC, R.DEAN_RD]),
     "THESIS_SUBMISSION_EXTENSION": ("3-month thesis submission extension", [R.DC, R.DEAN_RD]),

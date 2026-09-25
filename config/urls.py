@@ -10,4 +10,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("scholars/", include("scholars.urls")),
     path("identity/", include("identity.urls")),
+    path("api/auth/", include("identity.api_urls")),
+    path("api/academic/", include("coursework.api.urls")),
 ]

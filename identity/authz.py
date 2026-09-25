@@ -101,7 +101,20 @@ class ResourceScope:
     institution_only: bool = False     # resource with no school/department (e.g. an institutional grant)
 
 
+def _scholar_of(resource):
+    """The scholar a resource belongs to: the Scholar itself, or any record
+    exposing `owner_scholar` (enrollments, attempts, results, cases, ...)."""
+    from scholars.models import Scholar
+
+    if isinstance(resource, Scholar):
+        return resource
+    return getattr(resource, "owner_scholar", None)
+
+
 def resource_scope(resource) -> ResourceScope:
+    """Duck-typed so other bounded contexts need not register with identity:
+    records expose `owner_scholar` (scholar-owned) or `scope_department`
+    (organisation-owned; None means institution-level)."""
     from core.models import Department, Faculty, School
     from scholars.models import Scholar
 
@@ -109,6 +122,14 @@ def resource_scope(resource) -> ResourceScope:
         return ResourceScope(institution_only=True)
     if isinstance(resource, ResourceScope):
         return resource
+    if not isinstance(resource, Scholar) and hasattr(resource, "owner_scholar"):
+        owner = resource.owner_scholar
+        return resource_scope(owner) if owner is not None else ResourceScope(institution_only=True)
+    if hasattr(resource, "scope_department"):
+        dept = resource.scope_department
+        if dept is None:
+            return ResourceScope(institution_only=True)
+        return ResourceScope(school_id=dept.school_id, department_id=dept.pk)
     if isinstance(resource, Scholar):
         dept = resource.department
         return ResourceScope(school_id=dept.school_id, department_id=dept.pk, scholar_id=resource.pk)
@@ -142,25 +163,42 @@ def covers(cap: EffectiveCapability, target: ResourceScope) -> bool:
 
 # --- Relationships ---------------------------------------------------------------------
 
-def _supervises(person, scholar) -> bool:
+def _supervises(person, resource) -> bool:
     from supervision.models import SupervisorAssignment
-    return bool(person.faculty_profile_id) and SupervisorAssignment.objects.filter(
+    scholar = _scholar_of(resource)
+    return scholar is not None and bool(person.faculty_profile_id) and SupervisorAssignment.objects.filter(
         scholar=scholar, faculty_id=person.faculty_profile_id, end_date__isnull=True, approved_on__isnull=False,
     ).exists()
 
 
-def _tac_member(person, scholar) -> bool:
+def _tac_member(person, resource) -> bool:
     from supervision.models import TACMembership
-    return bool(person.faculty_profile_id) and TACMembership.objects.filter(
+    scholar = _scholar_of(resource)
+    return scholar is not None and bool(person.faculty_profile_id) and TACMembership.objects.filter(
         scholar=scholar, faculty_id=person.faculty_profile_id, end_date__isnull=True, approved_on__isnull=False,
     ).exists()
 
 
-def _self(person, scholar) -> bool:
-    return person.scholar_profile_id is not None and person.scholar_profile_id == scholar.pk
+def _self(person, resource) -> bool:
+    scholar = _scholar_of(resource)
+    return scholar is not None and person.scholar_profile_id is not None and person.scholar_profile_id == scholar.pk
 
 
 RELATIONSHIPS = {"self": _self, "supervises": _supervises, "tac_member": _tac_member}
+
+
+def register_relationship(name: str, check) -> None:
+    """Let a bounded context add a relationship check `check(person, resource) -> bool`."""
+    if name in RELATIONSHIPS and RELATIONSHIPS[name] is not check:
+        raise ValueError(f"relationship {name!r} already registered")
+    RELATIONSHIPS[name] = check
+
+
+def register_policies(policies: dict) -> None:
+    for action, policy in policies.items():
+        if action in POLICIES and POLICIES[action] != policy:
+            raise ValueError(f"policy {action!r} already registered")
+        POLICIES[action] = policy
 
 
 # --- Policies --------------------------------------------------------------------------
@@ -219,6 +257,12 @@ def authorize(person, action: str, resource=None, *, on=None) -> Decision:
     policy = POLICIES.get(action)
     if policy is None:
         return Decision(False, (f"unknown action '{action}'",))
+    return evaluate_policy(person, action, policy, resource, on=on)
+
+
+def evaluate_policy(person, action: str, policy: Policy, resource=None, *, on=None) -> Decision:
+    """Evaluate an explicit policy (used for rules whose authority is configured
+    at runtime, e.g. a regulatory parameter naming the approving capability)."""
     if person is None:
         return Decision(False, ("no institutional identity",))
     if not person.is_active:

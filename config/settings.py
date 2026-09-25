@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "finance",
     "documents",
     "identity",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
@@ -104,11 +105,25 @@ LOGGING = {
     },
 }
 
+# REST API (Step 5C). Session authentication only (CSRF enforced); the
+# identity provider (D-IdP) is not yet connected. Every endpoint additionally
+# requires an active institutional Person and re-authorizes server-side.
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["identity.api_base.HasActivePerson"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    "EXCEPTION_HANDLER": "identity.api_base.exception_handler",
+}
+
 # Session / cookie hardening (authentication foundation).
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_AGE = int(os.environ.get("DJANGO_SESSION_AGE", 60 * 60 * 8))
 CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_FAILURE_VIEW = "identity.api_base.csrf_failure"
+# Origins allowed to POST with the session (e.g. the SPA's public origin), comma-separated.
+CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

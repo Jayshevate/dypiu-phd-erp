@@ -17,6 +17,10 @@ class Capability(models.TextChoices):
     DC_MEMBER = "DC_MEMBER", "DC member"
     EXAM_EVALUATOR = "EXAM_EVALUATOR", "Exam evaluator"
     PHD_CELL_OPERATOR = "PHD_CELL_OPERATOR", "PhD Cell operator"
+    # Added in Step 5A (academic roles). Whether the R&D Cell and the PhD Cell
+    # are the same office is an open decision (D-CAP); they are kept distinct.
+    RND_CELL_OPERATOR = "RND_CELL_OPERATOR", "R&D Cell operator"
+    CISR_OPERATOR = "CISR_OPERATOR", "CISR operator"
     ACADEMIC_ADMIN = "ACADEMIC_ADMIN", "Academic admin"
     DEAN_RND = "DEAN_RND", "Dean R&D"
     COE_OPERATOR = "COE_OPERATOR", "COE operator"
@@ -45,6 +49,8 @@ ALLOWED_SCOPES = {
     Capability.SCHOOL_ADMIN: {ScopeType.SCHOOL},
     Capability.EXAM_EVALUATOR: {ScopeType.SCHOLAR},
     Capability.PHD_CELL_OPERATOR: {ScopeType.INSTITUTION},
+    Capability.RND_CELL_OPERATOR: {ScopeType.INSTITUTION},
+    Capability.CISR_OPERATOR: {ScopeType.INSTITUTION},
     Capability.ACADEMIC_ADMIN: {ScopeType.INSTITUTION},
     Capability.DEAN_RND: {ScopeType.INSTITUTION},
     Capability.COE_OPERATOR: {ScopeType.INSTITUTION},
@@ -60,6 +66,8 @@ GRANTABLE_BY = {
     Capability.SCHOOL_ADMIN: {Capability.ACADEMIC_ADMIN, Capability.SYSTEM_ADMIN},
     Capability.EXAM_EVALUATOR: {Capability.PHD_CELL_OPERATOR, Capability.SYSTEM_ADMIN},
     Capability.PHD_CELL_OPERATOR: {Capability.SYSTEM_ADMIN},
+    Capability.RND_CELL_OPERATOR: {Capability.SYSTEM_ADMIN},
+    Capability.CISR_OPERATOR: {Capability.SYSTEM_ADMIN},
     Capability.ACADEMIC_ADMIN: {Capability.SYSTEM_ADMIN},
     Capability.DEAN_RND: {Capability.SYSTEM_ADMIN},
     Capability.COE_OPERATOR: {Capability.SYSTEM_ADMIN},
@@ -80,8 +88,10 @@ WORKSPACES = {
     Capability.DC_MEMBER: ("dc", "/dc"),
     Capability.EXAM_EVALUATOR: ("examiner", "/examiner"),
     Capability.PHD_CELL_OPERATOR: ("phd_cell", "/phd-cell"),
+    Capability.RND_CELL_OPERATOR: ("rnd_cell", "/rnd-cell"),
+    Capability.CISR_OPERATOR: ("cisr", "/cisr"),
     Capability.ACADEMIC_ADMIN: ("academic_admin", "/academic-admin"),
-    Capability.DEAN_RND: ("dean", "/dean"),
+    Capability.DEAN_RND: ("dean", "/dean-rd"),
     Capability.COE_OPERATOR: ("coe", "/coe"),
     Capability.VC_OPERATOR: ("vc", "/vc"),
     Capability.SYSTEM_ADMIN: ("system", "/system"),

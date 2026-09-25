@@ -15,7 +15,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from coursework.services import evaluate as evaluate_coursework
+from coursework.academic.records import coursework_status
 from phd_rules import durations, policy
 from scholars.models import ExtensionGrant, Phase, Scholar, Status
 from supervision.services import current_supervisor, tac_complete
@@ -47,8 +47,9 @@ def _admission(s: Scholar, today):
 
 
 def _coursework(s, today):
-    v = evaluate_coursework(s)
-    return [] if v.complete else v.reasons
+    """Authoritative: the Academic record derived from ratified results."""
+    status = coursework_status(s)
+    return [] if status["complete"] else status["reasons"]
 
 
 def _supervisor_tac(s, today):

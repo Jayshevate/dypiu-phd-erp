@@ -3,6 +3,11 @@ from django.contrib import admin
 from . import models
 
 
+@admin.register(models.University)
+class UniversityAdmin(admin.ModelAdmin):
+    list_display = ["code", "name"]
+
+
 @admin.register(models.School)
 class SchoolAdmin(admin.ModelAdmin):
     list_display = ["code", "name"]

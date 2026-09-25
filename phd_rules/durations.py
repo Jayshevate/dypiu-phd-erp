@@ -39,10 +39,6 @@ def coursework_due(registration: date) -> date:
     return add_months(registration, policy.COURSEWORK_MONTHS)
 
 
-def coursework_attempt_window_end(first_attempt: date) -> date:
-    return add_years(first_attempt, policy.COURSEWORK_ATTEMPT_WINDOW_YEARS)
-
-
 def proposal_due(coursework_passed: date) -> date:
     return add_months(coursework_passed, policy.PROPOSAL_DUE_MONTHS_AFTER_COURSEWORK)
 

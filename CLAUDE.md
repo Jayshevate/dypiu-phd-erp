@@ -61,6 +61,11 @@ If a requirement is unclear:
 
 Never guess.
 
+An operation that is intentionally BLOCKED because a regulatory parameter or
+institutional decision remains unresolved is NOT a placeholder implementation.
+Blocking the operation and reporting the exact decision required is the correct
+behavior (see section 3).
+
 ---
 
 ## 3. REGULATORY SOURCE OF TRUTH
@@ -74,16 +79,24 @@ Official DYPIU PhD regulations and approved regulatory decisions have priority o
 - UI behavior
 - previous implementation choices
 
-The following documents must be consulted when relevant:
+The following documents must be consulted when relevant.
 
-- docs/REGULATORY_DECISION_SHEET.md
-- docs/FINAL_ARCHITECTURE.md
-- docs/REPOSITORY_AUDIT.md
+In the React repository (dypiu-phd-erp-1), not in this Django repository:
+
+- dypiu-phd-erp-1/docs/REGULATORY_DECISION_SHEET.md
+- dypiu-phd-erp-1/docs/FINAL_ARCHITECTURE.md
+- dypiu-phd-erp-1/docs/REPOSITORY_AUDIT.md
+
+In this Django repository:
+
 - docs/IDENTITY_AUTHZ.md
 - relevant academic/research documentation
 
 If a rule is marked unresolved/configurable/ambiguous,
 DO NOT convert it into a hard-coded rule.
+
+If a required institutional decision is missing, BLOCK the operation and
+report the exact decision required.
 
 ---
 
@@ -101,6 +114,8 @@ Supervisor is a capability/workspace of Faculty.
 
 Do NOT create a second human identity for Supervisor.
 
+/identity/me/ is the authoritative identity source.
+
 Authorization must be server-side.
 
 Never trust:
@@ -111,10 +126,13 @@ Never trust:
 - hidden UI controls
 - client-selected identity
 - client-selected scholar IDs
+- browser-supplied person IDs
 
 Every privileged Django API operation must enforce authorization.
 
 Default authorization behavior is DENY.
+
+Expired or revoked capabilities must immediately lose access.
 
 ---
 
@@ -198,9 +216,10 @@ Never:
 UI action
  → milestone completed
 
-Preserve the official 42 milestone structure.
-
-Where internal sub-milestones exist, preserve their stable IDs.
+Preserve official milestone numbering and stable IDs. The 42-milestone
+catalogue and the status of internal sub-milestones 9.1 and 24.1 remain
+subject to the applicable regulatory confirmation/decision sheet and must not
+be treated as settled until confirmed.
 
 Never renumber official milestone numbers.
 
@@ -298,6 +317,8 @@ For significant changes, run:
 - relevant Django tests
 - full Django test suite when practical
 - migration checks
+- PostgreSQL tests
+- API authorization tests
 - React TypeScript check
 - React production build
 
@@ -451,6 +472,8 @@ Do not automatically continue to the next phase.
 ---
 
 ## 19. GIT SAFETY
+
+Run git status before AND after implementation.
 
 Before implementation:
 

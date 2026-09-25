@@ -6,6 +6,9 @@ class Semester(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     fee_deadline = models.DateField()
+    academic_semester = models.OneToOneField("coursework.Semester", null=True, blank=True, on_delete=models.PROTECT,
+                                             related_name="ta_semester",
+                                             help_text="Canonical academic semester this TA semester belongs to")
 
     class Meta:
         ordering = ["start_date"]
