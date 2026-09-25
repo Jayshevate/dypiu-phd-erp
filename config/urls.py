@@ -9,4 +9,5 @@ urlpatterns = [
     path("", RedirectView.as_view(pattern_name="scholars:dashboard", permanent=False)),
     path("admin/", admin.site.urls),
     path("scholars/", include("scholars.urls")),
+    path("identity/", include("identity.urls")),
 ]
