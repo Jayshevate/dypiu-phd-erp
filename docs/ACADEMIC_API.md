@@ -78,6 +78,9 @@ identity, permissions and every academic outcome are decided here.
 | GET/POST | `setup/scholars/` | `scholar.edit_record` (PhD Cell, Academic Admin); paginated, `?q=`, identity / login state per row |
 | POST | `setup/people/provision/` | `identity.person.manage` (SYSTEM_ADMIN, ACADEMIC_ADMIN): Person + profile link (+ login awaiting activation) |
 | POST | `setup/people/<id>/activation/` | `identity.person.manage`: one-time activation link for a never-activated login |
+| GET | `imports/types/` · `imports/` · `imports/<id>/` · `imports/templates/<type>/` | holders of an import type's authority (see `docs/IMPORTS.md`) |
+| POST | `imports/analyze/` · `imports/preview/` · `imports/<id>/commit/` | the import type's own policy (batch) + the domain service per row; provisioning needs `identity.person.manage` |
+| POST | `imports/<id>/activation-links/` | `identity.person.manage`: CSV of one-time links for logins the import created |
 
 Not exposed: revaluation *review* (the reviewer is UNRESOLVED), rule parameters with no key (these are added by
 migration), and direct model CRUD.

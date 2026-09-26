@@ -1,3 +1,6 @@
 Django>=5.2,<6.0
 djangorestframework>=3.15,<4
+# spreadsheet import (Step A3): .xlsx and legacy .xls, read-only use
+openpyxl>=3.1,<4
+xlrd>=2.0,<3
 # psycopg[binary]>=3.2  # uncomment for PostgreSQL (set POSTGRES_DB etc.)

@@ -1,6 +1,8 @@
 """Academic REST API: /api/academic/..."""
 from django.urls import path
 
+from imports import api as import_api
+
 from . import approvals, offices, scholar, setup, teaching
 
 app_name = "academic_api"
@@ -90,6 +92,16 @@ urlpatterns = [
     path("setup/scholars/", setup.ScholarRecordsView.as_view()),
     path("setup/people/provision/", setup.ProvisionView.as_view()),
     path("setup/people/<int:pk>/activation/", setup.ActivationView.as_view()),
+
+    # institutional data import (Step A3)
+    path("imports/", import_api.BatchListView.as_view()),
+    path("imports/types/", import_api.TypesView.as_view()),
+    path("imports/templates/<str:key>/", import_api.TemplateView.as_view()),
+    path("imports/analyze/", import_api.AnalyzeView.as_view()),
+    path("imports/preview/", import_api.PreviewView.as_view()),
+    path("imports/<int:pk>/", import_api.BatchView.as_view()),
+    path("imports/<int:pk>/commit/", import_api.CommitView.as_view()),
+    path("imports/<int:pk>/activation-links/", import_api.ActivationLinksView.as_view()),
 
     # approvals
     path("third-attempt-cases/", approvals.ThirdAttemptCasesView.as_view()),

@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "finance",
     "documents",
     "identity",
+    "imports",
     "rest_framework",
 ]
 
@@ -108,6 +109,15 @@ LOGGING = {
 # REST API (Step 5C). Session authentication only (CSRF enforced); the
 # identity provider (D-IdP) is not yet connected. Every endpoint additionally
 # requires an active institutional Person and re-authorizes server-side.
+# Institutional data import (Step A3). IMPORT_AI_MAPPER is a dotted path to an
+# imports.mapping.AIImportMapper subclass; empty = deterministic mapping only (default).
+# A mapper only ever receives column headers, never cell values.
+IMPORT_MAX_BYTES = int(os.environ.get("IMPORT_MAX_BYTES", 5 * 1024 * 1024))
+IMPORT_MAX_ROWS = int(os.environ.get("IMPORT_MAX_ROWS", 5000))
+IMPORT_MAX_COLUMNS = 100
+IMPORT_MAX_EXPANDED_BYTES = 100 * 1024 * 1024  # uncompressed size cap for .xlsx archives
+IMPORT_AI_MAPPER = os.environ.get("IMPORT_AI_MAPPER", "")
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["identity.api_base.HasActivePerson"],
