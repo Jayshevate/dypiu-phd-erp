@@ -101,6 +101,25 @@ class LoginView(APIView):
         return Response(identity_payload(person))
 
 
+@method_decorator(csrf_protect, name="dispatch")
+class ActivateView(APIView):
+    """Public: set your own password with a one-time activation link (Step A2).
+    Does not sign in; the person signs in normally afterwards."""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        from .provisioning import activate
+
+        uid = str(request.data.get("uid", "")).strip()
+        token = str(request.data.get("token", "")).strip()
+        password = str(request.data.get("password", ""))
+        if not uid or not token or not password:
+            raise DjangoValidationError("The activation link and a new password are required")
+        person = activate(uid, token, password, request=request)
+        return Response({"activated": True, "username": person.user.get_username()})
+
+
 class LogoutView(APIView):
     permission_classes = [AllowAny]
 

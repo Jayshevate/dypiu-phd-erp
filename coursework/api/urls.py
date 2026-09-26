@@ -1,7 +1,7 @@
 """Academic REST API: /api/academic/..."""
 from django.urls import path
 
-from . import approvals, offices, scholar, teaching
+from . import approvals, offices, scholar, setup, teaching
 
 app_name = "academic_api"
 
@@ -77,6 +77,19 @@ urlpatterns = [
     path("governance/offerings/<int:pk>/assignments/", offices.AssignFacultyView.as_view()),
     path("governance/assignments/<int:pk>/revoke/", offices.RevokeAssignmentView.as_view()),
     path("governance/faculty/", offices.FacultyDirectoryView.as_view()),
+
+    # institutional setup and provisioning (Step A2)
+    path("setup/status/", setup.StatusView.as_view()),
+    path("setup/universities/", setup.UniversitiesView.as_view()),
+    path("setup/schools/", setup.SchoolsView.as_view()),
+    path("setup/departments/", setup.DepartmentsView.as_view()),
+    path("setup/academic-years/", setup.AcademicYearsView.as_view()),
+    path("setup/semesters/", setup.SemestersView.as_view()),
+    path("setup/courses/", setup.CoursesView.as_view()),
+    path("setup/faculty/", setup.FacultyRecordsView.as_view()),
+    path("setup/scholars/", setup.ScholarRecordsView.as_view()),
+    path("setup/people/provision/", setup.ProvisionView.as_view()),
+    path("setup/people/<int:pk>/activation/", setup.ActivationView.as_view()),
 
     # approvals
     path("third-attempt-cases/", approvals.ThirdAttemptCasesView.as_view()),

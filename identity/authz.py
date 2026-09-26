@@ -239,6 +239,12 @@ POLICIES: dict[str, Policy] = {
     "identity.person.manage": Policy(rules=(Rule(C.SYSTEM_ADMIN), Rule(C.ACADEMIC_ADMIN)), privileged=True,
                                      description="Create persons and link profiles"),
     "audit.view": Policy(rules=(Rule(C.SYSTEM_ADMIN),), privileged=True, description="Read the audit trail"),
+    # PROVISIONAL (RD-38): no regulation names who creates the institutional structure or faculty
+    # records. ACADEMIC_ADMIN holds both until DYPIU confirms (decision recorded in Step A2).
+    "institution.structure.manage": Policy(rules=(Rule(C.ACADEMIC_ADMIN),), privileged=True,
+                                           description="Create universities, schools and departments"),
+    "faculty.record.manage": Policy(rules=(Rule(C.ACADEMIC_ADMIN),), privileged=True,
+                                    description="Create faculty records"),
 }
 
 

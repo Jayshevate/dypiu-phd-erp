@@ -8,7 +8,9 @@ identity, permissions and every academic outcome are decided here.
 `React → /api/... → SessionAuthentication (CSRF) → HasActivePerson → view → service authorization
 (identity.authz, deny by default, audited) → validation → atomic write + audit → JSON`.
 
-- **Authentication:** Django session. `GET /api/auth/csrf/`, `POST /api/auth/login/`, `POST /api/auth/logout/`.
+- **Authentication:** Django session. `GET /api/auth/csrf/`, `POST /api/auth/login/`, `POST /api/auth/logout/`,
+  `POST /api/auth/activate/` (public, CSRF-protected: `{uid, token, password}` sets the password of a provisioned
+  login once; it never signs in and never resets an already-activated password).
   The login must already be linked to an active `identity.Person`, so no second identity is created.
   The identity provider (OIDC/SAML, decision D-IdP) is still open.
 - **Identity:** `GET /identity/me/` returns the server-computed person, capabilities, workspaces and scope. The scope
@@ -69,11 +71,24 @@ identity, permissions and every academic outcome are decided here.
 | GET | `elective-proposals/` · POST `…/recommend/` · `…/decide/` | recommend: the scholar's supervisor · decide: `elective.approval_authority` (UNRESOLVED ⇒ blocked) |
 | GET/POST | `elective-lists/` · POST `…/submit/` · `…/decide/` | prepare: DEPARTMENT / SCHOOL admin in scope · decide: `elective.list_approval_chain` step, within scope |
 | GET | `question-papers/` · POST `exams/<id>/setters/` · `setter-appointments/<id>/received/` | appoint: `question_paper.setter_appointed_by` (DC, school scope) · receipt: COE |
+| GET | `setup/status/` | holders of any setup authority: step counts, `can_manage`, `blocked_by` (missing upstream levels), form choices |
+| GET/POST | `setup/universities/` · `setup/schools/` · `setup/departments/` | read: setup authorities · write: `institution.structure.manage` (ACADEMIC_ADMIN, **provisional RD-38**) |
+| GET/POST | `setup/academic-years/` · `setup/semesters/` · `setup/courses/` | read: setup authorities · write: `academic.structure.manage` (ACADEMIC_ADMIN, CISR) |
+| GET/POST | `setup/faculty/` | `faculty.record.manage` (ACADEMIC_ADMIN, **provisional RD-38**); paginated, `?q=`, identity / login state per row |
+| GET/POST | `setup/scholars/` | `scholar.edit_record` (PhD Cell, Academic Admin); paginated, `?q=`, identity / login state per row |
+| POST | `setup/people/provision/` | `identity.person.manage` (SYSTEM_ADMIN, ACADEMIC_ADMIN): Person + profile link (+ login awaiting activation) |
+| POST | `setup/people/<id>/activation/` | `identity.person.manage`: one-time activation link for a never-activated login |
 
 Not exposed: revaluation *review* (the reviewer is UNRESOLVED), rule parameters with no key (these are added by
 migration), and direct model CRUD.
 
 ## Tests
+
+`coursework/test_academic_setup.py` (Step A2) has 24 tests: structure, calendar and catalogue writes by the right
+authority only; expired and revoked capabilities; duplicate codes, PRNs (any case) and e-mails; provisioning that never
+grants a capability (FACULTY / SCHOLAR are derived), never merges an existing person and never leaves a half-created
+identity; activation that is single-use, CSRF-protected, refuses tampered tokens, cannot reset an active password and
+cannot take over a SYSTEM_ADMIN or a login that has already signed in; tokens never appear in the audit trail.
 
 `coursework/test_academic_api.py` has 39 tests covering authentication (401 everywhere, CSRF, login without a
 person), negative authorization and behaviour. The negative cases are:

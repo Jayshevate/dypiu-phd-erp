@@ -57,6 +57,29 @@ Other functions:
   audited). Derived capabilities, SYSTEM_ADMIN, self-grants and existing logins or persons are refused.
 - The Django admin shows identity models **read-only**, even to superusers.
 
+## Institutional provisioning (Step A2)
+
+- `institution.structure.manage` (universities, schools, departments) and `faculty.record.manage` (faculty records)
+  are held by ACADEMIC_ADMIN. **Provisional (RD-38):** no regulation names these authorities; DYPIU chose Academic
+  Admin pending confirmation. Scholar records use the existing `scholar.edit_record` (PhD Cell, Academic Admin).
+  Services: `coursework/academic/institution.py`.
+- Faculty and scholar records require a unique institutional e-mail (and scholars a unique PRN, compared
+  case-insensitively). The e-mail is the key that links a Person; display names are never used to match people.
+- `identity/provisioning.py`:
+  - `provision_for_record(actor, faculty_or_scholar, create_login=True)` creates the Person from the record's e-mail
+    (`provision_person`), links the record (`link_faculty_profile` / `link_scholar_profile`) and optionally creates a
+    login (username = e-mail) with an **unusable password** (`link_user`). The FACULTY / SCHOLAR capability is
+    *derived* from the link; nothing is granted and no client-supplied role or capability is read. It refuses, before
+    any write, a record already linked, a record without e-mail, an e-mail that already belongs to a person (no silent
+    merge) and an existing username. All writes are one transaction.
+  - `issue_activation(actor, person)` returns a single-use token (Django's token generator with its own salt; expiry =
+    `PASSWORD_RESET_TIMEOUT`, default 72 hours). Only for a login that has never been activated and has never signed in; never for yourself;
+    never for a SYSTEM_ADMIN unless the actor is one. The token is not stored and not written to the audit trail.
+  - `activate(uid, token, password)` (public endpoint) validates the password, sets it once, and audits
+    `identity.login.activate` (allowed or denied). The token stops working as soon as a password is set.
+- Delivery of activation links is manual (the issuing office passes the link on); e-mail delivery and the identity
+  provider (D-IdP) are open decisions and can replace this step later.
+
 ## Authentication foundation
 
 - `identity.middleware.PersonMiddleware` sets `request.person`.
